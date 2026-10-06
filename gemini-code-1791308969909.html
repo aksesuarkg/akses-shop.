@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Akses.kg — Магазин мобильных аксессуаров</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Шапка сайта -->
+  <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-emerald-500 p-2 rounded-xl text-slate-900">
+          <i class="fa-solid font-bold fa-mobile-screen text-xl"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-xl tracking-tight text-white">Akses<span class="text-emerald-400">.kg</span></span>
+          <span class="block text-[10px] text-slate-400 -mt-1">Аксессуары в Кыргызстане</span>
+        </div>
+      </div>
+
+      <!-- Поиск (Desktop) -->
+      <div class="hidden md:flex flex-1 max-w-md mx-8">
+        <div class="relative w-full">
+          <input type="text" id="searchInput" oninput="renderProducts()" placeholder="Поиск аксессуаров..." class="w-full bg-slate-800 text-white pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-slate-700">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- Кнопка Корзины -->
+        <button onclick="toggleCartModal(true)" class="relative p-2 text-slate-300 hover:text-white transition">
+          <i class="fa-solid fa-cart-shopping text-xl"></i>
+          <span id="cartBadge" class="absolute -top-1 -right-1 bg-emerald-500 text-slate-900 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Поиск (Mobile) -->
+  <div class="md:hidden bg-slate-900 px-4 pb-3 border-t border-slate-800">
+    <div class="relative w-full">
+      <input type="text" id="searchInputMobile" oninput="syncSearchAndRender()" placeholder="Поиск аксессуаров..." class="w-full bg-slate-800 text-white pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-slate-700">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+    </div>
+  </div>
+
+  <!-- Главный контент -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Фильтры по категориям -->
+    <div class="flex items-center space-x-2 overflow-x-auto pb-4 scrollbar-none" id="categoriesContainer">
+      <!-- Динамические категории -->
+    </div>
+
+    <!-- Список товаров -->
+    <div class="mt-4">
+      <h2 class="text-xl font-bold text-slate-800 mb-4" id="sectionTitle">Все товары</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" id="productsGrid">
+        <!-- Динамические товары -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Модальное окно корзины -->
+  <div id="cartModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex justify-end">
+    <div class="bg-white w-full max-w-md h-full flex flex-col shadow-2xl">
+      <div class="p-4 border-b flex justify-between items-center bg-slate-900 text-white">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-bag-shopping text-emerald-400 mr-2"></i>Ваша корзина</h3>
+        <button onclick="toggleCartModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-4" id="cartItemsContainer">
+        <!-- Элементы корзины -->
+      </div>
+      <div class="p-4 border-t bg-slate-50 space-y-3">
+        <div class="flex justify-between text-lg font-bold">
+          <span>Итого:</span>
+          <span class="text-emerald-600" id="cartTotal">0 сом</span>
+        </div>
+        <button onclick="goToCheckout()" id="checkoutBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 disabled:opacity-50">
+          Перейти к оформлению
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно оформления и быстрой оплаты в MBANK -->
+  <div id="checkoutModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden my-8">
+      <div class="p-4 border-b bg-slate-900 text-white flex justify-between items-center">
+        <h3 class="font-bold text-lg"><i class="fa-solid fa-credit-card text-emerald-400 mr-2"></i>Оформление и оплата</h3>
+        <button onclick="toggleCheckoutModal(false)" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+      
+      <form id="checkoutForm" onsubmit="handleOrderSubmit(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Ваше имя *</label>
+          <input type="text" id="custName" required placeholder="Например: Болот" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Номер телефона (WhatsApp) *</label>
+          <input type="tel" id="custPhone" required placeholder="+996 700 000 000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Адрес доставки / Город *</label>
+          <input type="text" id="custAddress" required placeholder="г. Бишкек, ул. Чуй 120" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+
+        <!-- Кнопка быстрой оплаты через MBANK App -->
+        <div class="border rounded-2xl p-4 bg-emerald-50 border-emerald-300 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-900">Быстрая оплата онлайн</span>
+            <span class="text-xs font-extrabold text-emerald-700 bg-emerald-200/60 px-2 py-0.5 rounded-md" id="checkoutAmountBadge">0 сом</span>
+          </div>
+
+          <!-- БЫСТРАЯ КНОПКА МГНОВЕННОГО ПЕРЕХОДА В MBANK -->
+          <a id="mbankPayBtn" href="#" onclick="openMbankApp(event)" class="w-full bg-[#00A859] hover:bg-[#008f4c] text-white font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center space-x-3 shadow-lg shadow-emerald-600/30 transition-all transform active:scale-95 text-center">
+            <div class="bg-white text-[#00A859] w-7 h-7 rounded-lg flex items-center justify-center font-black text-lg">M</div>
+            <span class="text-sm">Открыть MBANK и оплатить</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-80"></i>
+          </a>
+
+          <div class="text-[11px] text-gray-600 bg-white p-2.5 rounded-xl border border-emerald-100 space-y-1">
+            <p><strong>Получатель:</strong> АЙДОС Т.</p>
+            <p><strong>Номер MBANK:</strong> <span class="font-mono font-bold text-emerald-700">+996 701 875 587</span></p>
+          </div>
+        </div>
+
+        <!-- Загрузка чека -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-gray-600">После перевода прикрепите чек/скриншот *</label>
+          <input type="file" id="receiptFile" accept="image/*" required onchange="handleReceiptSelect(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200">
+          <div id="receiptPreview" class="hidden mt-2 border rounded-xl p-2 text-center bg-gray-50">
+            <img id="previewImg" class="max-h-32 mx-auto rounded-lg shadow-sm" alt="Чек">
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl transition shadow-lg">
+          Подтвердить и отправить заказ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const defaultProducts = [
+      { id: 1, name: 'Чехол Silicone Cover iPhone 15 Pro', category: 'Чехлы', price: 650, image: 'https://images.unsplash.com/photo-1603313011101-320f26a4f6f6?w=400' },
+      { id: 2, name: 'Защитное стекло 9D iPhone 14/15', category: 'Защитные стекла', price: 350, image: 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=400' },
+      { id: 3, name: 'Быстрая зарядка 20W USB-C Power Adapter', category: 'Зарядные устройства', price: 950, image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=400' },
+      { id: 4, name: 'Кабель Type-C to Lightning 1m', category: 'Кабели', price: 450, image: 'https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=400' },
+      { id: 5, name: 'Беспроводные наушники AirPods Pro 2 (копия)', category: 'Наушники', price: 2500, image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=400' }
+    ];
+
+    let products = JSON.parse(localStorage.getItem('akses_products')) || defaultProducts;
+    let cart = JSON.parse(localStorage.getItem('akses_cart')) || [];
+    let selectedCategory = 'Все';
+    let currentReceiptBase64 = '';
+
+    function init() {
+      renderCategories();
+      renderProducts();
+      updateCartBadge();
+    }
+
+    function renderCategories() {
+      const categories = ['Все', ...new Set(products.map(p => p.category))];
+      const container = document.getElementById('categoriesContainer');
+      container.innerHTML = categories.map(cat => `
+        <button onclick="selectCategory('${cat}')" class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition ${selectedCategory === cat ? 'bg-emerald-500 text-slate-900 font-bold shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border'}">
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategories();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const search = (document.getElementById('searchInput').value || document.getElementById('searchInputMobile').value || '').toLowerCase();
+      const grid = document.getElementById('productsGrid');
+      
+      const filtered = products.filter(p => {
+        const matchesCat = selectedCategory === 'Все' || p.category === selectedCategory;
+        const matchesSearch = p.name.toLowerCase().includes(search);
+        return matchesCat && matchesSearch;
+      });
+
+      if(filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-400">Товары не найдены</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(p => `
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col">
+          <img src="${p.image}" class="h-40 w-full object-cover bg-gray-50" alt="${p.name}">
+          <div class="p-3 flex-1 flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] text-emerald-600 bg-emerald-50 font-bold px-2 py-0.5 rounded-full">${p.category}</span>
+              <h3 class="font-bold text-xs sm:text-sm text-gray-800 mt-1 line-clamp-2">${p.name}</h3>
+            </div>
+            <div class="mt-3 flex items-center justify-between">
+              <span class="font-extrabold text-sm sm:text-base text-slate-900">${p.price} сом</span>
+              <button onclick="addToCart(${p.id})" class="bg-slate-900 hover:bg-emerald-500 hover:text-slate-900 text-white p-2 rounded-xl text-xs transition">
+                <i class="fa-solid fa-cart-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function syncSearchAndRender() {
+      document.getElementById('searchInput').value = document.getElementById('searchInputMobile').value;
+      renderProducts();
+    }
+
+    function addToCart(id) {
+      const prod = products.find(p => p.id === id);
+      const item = cart.find(c => c.id === id);
+      if(item) {
+        item.qty++;
+      } else {
+        cart.push({ ...prod, qty: 1 });
+      }
+      saveCart();
+    }
+
+    function saveCart() {
+      localStorage.setItem('akses_cart', JSON.stringify(cart));
+      updateCartBadge();
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cartBadge');
+      const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+      if(totalCount > 0) {
+        badge.innerText = totalCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleCartModal(show) {
+      document.getElementById('cartModal').classList.toggle('hidden', !show);
+      if(show) renderCartItems();
+    }
+
+    function renderCartItems() {
+      const container = document.getElementById('cartItemsContainer');
+      const totalEl = document.getElementById('cartTotal');
+      
+      if(cart.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-gray-400">Корзина пуста</div>`;
+        totalEl.innerText = '0 сом';
+        document.getElementById('checkoutBtn').disabled = true;
+        return;
+      }
+
+      document.getElementById('checkoutBtn').disabled = false;
+      let total = 0;
+
+      container.innerHTML = cart.map(item => {
+        const itemTotal = item.price * item.qty;
+        total += itemTotal;
+        return `
+          <div class="flex items-center space-x-3 border-b pb-3">
+            <img src="${item.image}" class="w-12 h-12 rounded-xl object-cover bg-gray-50">
+            <div class="flex-1">
+              <h4 class="text-xs font-bold text-gray-800 line-clamp-1">${item.name}</h4>
+              <p class="text-xs text-emerald-600 font-bold">${item.price} сом</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 border rounded-lg text-xs flex items-center justify-center font-bold">-</button>
+              <span class="text-xs font-bold">${item.qty}</span>
+              <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 border rounded-lg text-xs flex items-center justify-center font-bold">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      totalEl.innerText = `${total} сом`;
+    }
+
+    function changeQty(id, delta) {
+      const item = cart.find(c => c.id === id);
+      if(item) {
+        item.qty += delta;
+        if(item.qty <= 0) {
+          cart = cart.filter(c => c.id !== id);
+        }
+      }
+      saveCart();
+      renderCartItems();
+    }
+
+    function goToCheckout() {
+      const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      document.getElementById('checkoutAmountBadge').innerText = `${totalAmount} сом`;
+      toggleCartModal(false);
+      toggleCheckoutModal(true);
+    }
+
+    function toggleCheckoutModal(show) {
+      document.getElementById('checkoutModal').classList.toggle('hidden', !show);
+    }
+
+    // Мгновенное открытие приложения MBANK по DeepLink & ELQR
+    function openMbankApp(e) {
+      e.preventDefault();
+      const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const phone = '996701875587'; // Номер получателя без плюсов и скобок
+      
+      // Формирование диплинка mBank с суммой и номером
+      const mbankDeepLink = `mbank://transfer?phone=${phone}&amount=${totalAmount}&comment=Оплата%20Akses.kg`;
+      const fallbackUrl = `https://mbank.kg/pay?phone=${phone}&amount=${totalAmount}`;
+
+      // Попытка автоматически запустить приложение MBANK
+      window.location.href = mbankDeepLink;
+
+      // Если через 1.5 секунды приложение не открылось (например, клиент зашел с ПК)
+      setTimeout(() => {
+        navigator.clipboard.writeText('+996701875587');
+        alert(`Сумма к оплате: ${totalAmount} сом.\n\nНомер +996701875587 (Айдос Т.) автоматически скопирован в буфер обмена!\nЕсли MBANK не открылся автоматически, откройте приложение и переведите нужную сумму.`);
+      }, 1200);
+    }
+
+    function handleReceiptSelect(e) {
+      const file = e.target.files[0];
+      if(file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          currentReceiptBase64 = evt.target.result;
+          document.getElementById('previewImg').src = currentReceiptBase64;
+          document.getElementById('receiptPreview').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function handleOrderSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('custName').value;
+      const phone = document.getElementById('custPhone').value;
+      const address = document.getElementById('custAddress').value;
+
+      const orders = JSON.parse(localStorage.getItem('akses_orders')) || [];
+      const totalAmount = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+      const newOrder = {
+        id: Date.now(),
+        date: new Date().toLocaleString('ru-RU'),
+        customer: { name, phone, address },
+        items: [...cart],
+        total: totalAmount,
+        receipt: currentReceiptBase64,
+        paymentStatus: 'Ожидает проверки',
+        orderStatus: 'Новый'
+      };
+
+      orders.unshift(newOrder);
+      localStorage.setItem('akses_orders', JSON.stringify(orders));
+
+      cart = [];
+      saveCart();
+      toggleCheckoutModal(false);
+      alert('Ваш заказ и чек отправлены! Продавец проверит оплату и свяжется с вами.');
+    }
+
+    init();
+  </script>
+</body>
+</html>
